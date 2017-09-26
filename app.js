@@ -59,8 +59,8 @@ module.exports = app;
             "         <laun:ClientId>" + parsedJson.ClientId + "</laun:ClientId>\n" +
             "         <laun:TotalCaseCount>" + parsedJson.TotalCaseCount + "</laun:TotalCaseCount>\n";
 
-       for (var i = 0; i < parsedJson.Cases; i++) {
-           var claimCase = parsedJson[i];
+       for (var i = 0; i < parsedJson.Cases.length; i++) {
+           var claimCase = parsedJson.Cases[i];
             xml += "         <laun:Cases>\n" +
                 "            <laun:CaseId>"+claimCase.CaseId+"</laun:CaseId>\n" +
                 "            <laun:ISOIndicator>"+claimCase.ISOIndicator+"</laun:ISOIndicator>\n" +
@@ -81,7 +81,7 @@ module.exports = app;
         "</soapenv:Envelope>";
 
 
-
+        console.log("The xml being sent is " + xml);
 
         client.send({
             'destination': '/queue/LaunchPointProcess_Processes_Core_CaseManagement_Case_Manager_Queue_Service',
