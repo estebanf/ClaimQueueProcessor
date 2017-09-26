@@ -1,10 +1,7 @@
 var express = require('express');
 var stomp = require('stomp');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+var jsonConverter = require('./util/jsonConverter');
+
 
 var app = express();
 
@@ -48,37 +45,38 @@ module.exports = app;
     client.on('message', function(message) {
         console.log("Got message: " + message.headers['message-id']);
         console.log(message.body);
-        var parsedJson = JSON.parse(message.body[0]);
-        console.log(parsedJson.BatchId);
-        var xml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:case=\"http://bpms.everteam.com/Processes/Core/CaseManagement/Case_Manager\" xmlns:laun=\"http://www.example.org/Launchpoint\">" +
-            "<soapenv:Header/>" +
-            "        <soapenv:Body>" +
-            "        <case:Read_case_batchRequest>" +
-            "<laun:BatchId>" + parsedJson.BatchId + "</laun:BatchId>\n" +
-            "         <laun:EnvironmentId>" + parsedJson.EnvironmentId + "</laun:EnvironmentId>\n" +
-            "         <laun:ClientId>" + parsedJson.ClientId + "</laun:ClientId>\n" +
-            "         <laun:TotalCaseCount>" + parsedJson.TotalCaseCount + "</laun:TotalCaseCount>\n";
-
-       for (var i = 0; i < parsedJson.Cases.length; i++) {
-           var claimCase = parsedJson.Cases[i];
-            xml += "         <laun:Cases>\n" +
-                "            <laun:CaseId>"+claimCase.CaseId+"</laun:CaseId>\n" +
-                "            <laun:ISOIndicator>"+claimCase.ISOIndicator+"</laun:ISOIndicator>\n" +
-                "            <laun:Score>" + claimCase.Score + "</laun:Score>\n" +
-                "            <laun:AccidentDate>" + claimCase.AccidentDate + "</laun:AccidentDate>\n" +
-                "            <laun:BenefitAmount>" + claimCase.BenefitAmount + "</laun:BenefitAmount>\n" +
-                "            <laun:FundingSource>" + claimCase.FundingSource + "</laun:FundingSource>\n" +
-                "            <laun:LOB>" + claimCase.LOB + "</laun:LOB>\n" +
-                "            <laun:State>" + claimCase.State + "</laun:State>\n" +
-                "            <laun:WorkComp>" + claimCase.WorkComp + "</laun:WorkComp>\n" +
-                "            <laun:CaseStatus>" + claimCase.CaseStatus + "</laun:CaseStatus>\n" +
-                "            <laun:CaseSource>" + claimCase.CaseSource + "</laun:CaseSource>\n" +
-                "         </laun:Cases>\n";
-       }
-
-        xml += "      </case:Read_case_batchRequest>\n" +
-        "   </soapenv:Body>\n" +
-        "</soapenv:Envelope>";
+        var xml = jsonConverter.convertJSONMessageToXMl(message.body[0]);
+       //  var parsedJson = JSON.parse(message.body[0]);
+       //  console.log(parsedJson.BatchId);
+       //  var xml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:case=\"http://bpms.everteam.com/Processes/Core/CaseManagement/Case_Manager\" xmlns:laun=\"http://www.example.org/Launchpoint\">" +
+       //      "<soapenv:Header/>" +
+       //      "        <soapenv:Body>" +
+       //      "        <case:Read_case_batchRequest>" +
+       //      "<laun:BatchId>" + parsedJson.BatchId + "</laun:BatchId>\n" +
+       //      "         <laun:EnvironmentId>" + parsedJson.EnvironmentId + "</laun:EnvironmentId>\n" +
+       //      "         <laun:ClientId>" + parsedJson.ClientId + "</laun:ClientId>\n" +
+       //      "         <laun:TotalCaseCount>" + parsedJson.TotalCaseCount + "</laun:TotalCaseCount>\n";
+       //
+       // for (var i = 0; i < parsedJson.Cases.length; i++) {
+       //     var claimCase = parsedJson.Cases[i];
+       //      xml += "         <laun:Cases>\n" +
+       //          "            <laun:CaseId>"+claimCase.CaseId+"</laun:CaseId>\n" +
+       //          "            <laun:ISOIndicator>"+claimCase.ISOIndicator+"</laun:ISOIndicator>\n" +
+       //          "            <laun:Score>" + claimCase.Score + "</laun:Score>\n" +
+       //          "            <laun:AccidentDate>" + claimCase.AccidentDate + "</laun:AccidentDate>\n" +
+       //          "            <laun:BenefitAmount>" + claimCase.BenefitAmount + "</laun:BenefitAmount>\n" +
+       //          "            <laun:FundingSource>" + claimCase.FundingSource + "</laun:FundingSource>\n" +
+       //          "            <laun:LOB>" + claimCase.LOB + "</laun:LOB>\n" +
+       //          "            <laun:State>" + claimCase.State + "</laun:State>\n" +
+       //          "            <laun:WorkComp>" + claimCase.WorkComp + "</laun:WorkComp>\n" +
+       //          "            <laun:CaseStatus>" + claimCase.CaseStatus + "</laun:CaseStatus>\n" +
+       //          "            <laun:CaseSource>" + claimCase.CaseSource + "</laun:CaseSource>\n" +
+       //          "         </laun:Cases>\n";
+       // }
+       //
+       //  xml += "      </case:Read_case_batchRequest>\n" +
+       //  "   </soapenv:Body>\n" +
+       //  "</soapenv:Envelope>";
 
 
         console.log("The xml being sent is " + xml);
