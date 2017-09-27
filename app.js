@@ -1,5 +1,6 @@
 var express = require('express');
 var stomp = require('stomp');
+var config = require('./config');
 var jsonConverter = require('./util/jsonConverter');
 
 
@@ -12,11 +13,11 @@ module.exports = app;
     "use strict";
 
     var stomp_args = {
-        port: 61613,
-        host: 'localhost',
+        port: config.active_mq.port,
+        host: config.active_mq.host,
         debug: false,
-        login: 'guest',
-        passcode: 'guest',
+        login: config.active_mq.user,
+        passcode: config.active_mq.password,
     };
 
     var client = new stomp.Stomp(stomp_args);
@@ -25,7 +26,7 @@ module.exports = app;
 // Specified number will 'fetch' that many messages
 // and dump it to the client.
     var headers = {
-        destination: '/queue/test',
+        destination: config.active_mq.source_queue,
         ack: 'client'/*,
         'activemq.prefetchSize': '1'*/
     };
@@ -46,74 +47,14 @@ module.exports = app;
         console.log("Got message: " + message.headers['message-id']);
         console.log(message.body);
         var xml = jsonConverter.convertJSONMessageToXMl(message.body[0]);
-       //  var parsedJson = JSON.parse(message.body[0]);
-       //  console.log(parsedJson.BatchId);
-       //  var xml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:case=\"http://bpms.everteam.com/Processes/Core/CaseManagement/Case_Manager\" xmlns:laun=\"http://www.example.org/Launchpoint\">" +
-       //      "<soapenv:Header/>" +
-       //      "        <soapenv:Body>" +
-       //      "        <case:Read_case_batchRequest>" +
-       //      "<laun:BatchId>" + parsedJson.BatchId + "</laun:BatchId>\n" +
-       //      "         <laun:EnvironmentId>" + parsedJson.EnvironmentId + "</laun:EnvironmentId>\n" +
-       //      "         <laun:ClientId>" + parsedJson.ClientId + "</laun:ClientId>\n" +
-       //      "         <laun:TotalCaseCount>" + parsedJson.TotalCaseCount + "</laun:TotalCaseCount>\n";
-       //
-       // for (var i = 0; i < parsedJson.Cases.length; i++) {
-       //     var claimCase = parsedJson.Cases[i];
-       //      xml += "         <laun:Cases>\n" +
-       //          "            <laun:CaseId>"+claimCase.CaseId+"</laun:CaseId>\n" +
-       //          "            <laun:ISOIndicator>"+claimCase.ISOIndicator+"</laun:ISOIndicator>\n" +
-       //          "            <laun:Score>" + claimCase.Score + "</laun:Score>\n" +
-       //          "            <laun:AccidentDate>" + claimCase.AccidentDate + "</laun:AccidentDate>\n" +
-       //          "            <laun:BenefitAmount>" + claimCase.BenefitAmount + "</laun:BenefitAmount>\n" +
-       //          "            <laun:FundingSource>" + claimCase.FundingSource + "</laun:FundingSource>\n" +
-       //          "            <laun:LOB>" + claimCase.LOB + "</laun:LOB>\n" +
-       //          "            <laun:State>" + claimCase.State + "</laun:State>\n" +
-       //          "            <laun:WorkComp>" + claimCase.WorkComp + "</laun:WorkComp>\n" +
-       //          "            <laun:CaseStatus>" + claimCase.CaseStatus + "</laun:CaseStatus>\n" +
-       //          "            <laun:CaseSource>" + claimCase.CaseSource + "</laun:CaseSource>\n" +
-       //          "         </laun:Cases>\n";
-       // }
-       //
-       //  xml += "      </case:Read_case_batchRequest>\n" +
-       //  "   </soapenv:Body>\n" +
-       //  "</soapenv:Envelope>";
-
 
         console.log("The xml being sent is " + xml);
 
         client.send({
-            'destination': '/queue/LaunchPointProcess_Processes_Core_CaseManagement_Case_Manager_Queue_Service',
+            'destination': config.active_mq.target_queue,
             'body': xml,
             'persistent': 'true'
         });
-
-        /*        "         <!--1 or more repetitions:-->\n" +
-                    "         <laun:Cases>\n" +
-                    "            <laun:CaseId>456</laun:CaseId>\n" +
-                    "            <laun:ISOIndicator>1</laun:ISOIndicator>\n" +
-                    "            <laun:Score>67</laun:Score>\n" +
-                    "            <laun:AccidentDate>2017-05-03</laun:AccidentDate>\n" +
-                    "            <laun:BenefitAmount>5000</laun:BenefitAmount>\n" +
-                    "            <laun:FundingSource>Medicaid</laun:FundingSource>\n" +
-                    "            <laun:LOB>Health</laun:LOB>\n" +
-                    "            <laun:State>CO</laun:State>\n" +
-                    "            <laun:WorkComp>No</laun:WorkComp>\n" +
-                    "            <laun:CaseStatus>Investigate</laun:CaseStatus>\n" +
-                    "            <laun:CaseSource>Generated</laun:CaseSource>\n" +
-                    "         </laun:Cases>\n" +
-                    "         <laun:Cases>\n" +
-                    "            <laun:CaseId>456</laun:CaseId>\n" +
-                    "            <laun:ISOIndicator>1</laun:ISOIndicator>\n" +
-                    "            <laun:Score>67</laun:Score>\n" +
-                    "            <laun:AccidentDate>2017-05-03</laun:AccidentDate>\n" +
-                    "            <laun:BenefitAmount>5000</laun:BenefitAmount>\n" +
-                    "            <laun:FundingSource>Medicaid</laun:FundingSource>\n" +
-                    "            <laun:LOB>Health</laun:LOB>\n" +
-                    "            <laun:State>CO</laun:State>\n" +
-                    "            <laun:WorkComp>No</laun:WorkComp>\n" +
-                    "            <laun:CaseStatus>Investigate</laun:CaseStatus>\n" +
-                    "            <laun:CaseSource>Generated</laun:CaseSource>\n" +
-                    "         </laun:Cases>\n" +*/
 
         client.ack(message.headers['message-id']);
     });

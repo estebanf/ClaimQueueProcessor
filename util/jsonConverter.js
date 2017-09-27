@@ -1,3 +1,5 @@
+var config = require("../config.js");
+
 
 var soapEnvelopeHeader = "<soapenv:Envelope" +
     " xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"" +
@@ -30,6 +32,7 @@ var convertJsonStringToObject = function (jsonString) {
         jsonObject = JSON.parse(jsonString);
     } catch (e) {
         console.error("Caught an error converting json to xml " + e);
+        console.error(jsonString);
     }
     return jsonObject;
 };
@@ -48,14 +51,11 @@ var parseObject = function (json) {
 };
 
 var parseArray = function (arrayName, json) {
-
     var xml = "";
     for (var i = 0; i < json.length; i++) {
         var object = json[i];
         xml += createXMLElement("laun", arrayName, null, false);
-        for (var key in object) {
-            xml += createXMLElement("laun", key, object[key]);
-        }
+        xml += parseObject(object);
         xml += createXMLElement("laun", arrayName, null, true);
     }
     console.log("The translated array xml is " + xml);
