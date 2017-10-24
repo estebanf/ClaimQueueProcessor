@@ -12,6 +12,8 @@ module.exports = app;
 (function () {
     "use strict";
 
+    // ToDo: I think this logic should be moved into its own module, so that we can have three instances of queue listeners
+    // ToDo: without having to copy/paste this 3 times
     var stomp_args = {
         port: config.active_mq.port,
         host: config.active_mq.host,
@@ -26,7 +28,7 @@ module.exports = app;
 // Specified number will 'fetch' that many messages
 // and dump it to the client.
     var headers = {
-        destination: config.active_mq.source_queue,
+        destination: config.active_mq.batch_source_queue,
         ack: 'client'/*,
         'activemq.prefetchSize': '1'*/
     };
@@ -46,12 +48,12 @@ module.exports = app;
     client.on('message', function(message) {
         console.log("Got message: " + message.headers['message-id']);
         console.log(message.body);
-        var xml = jsonConverter.convertJSONMessageToXMl(message.body[0]);
+        var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], "batch");
 
         console.log("The xml being sent is " + xml);
 
         client.send({
-            'destination': config.active_mq.target_queue,
+            'destination': config.active_mq.batch_target_queue,
             'body': xml,
             'persistent': 'true'
         });

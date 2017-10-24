@@ -1,4 +1,7 @@
-var config = require("../config.js");
+var baseConfig = require("../config.js");
+
+// Initialized by convertJSONMessageToXMl
+var config;
 
 /**
  * Everteam generates namespace prefixes by lowercasing the first four letters of the last path element
@@ -9,13 +12,18 @@ var config = require("../config.js");
 var createSchemaPrefix = function (namespace) {
     var lastPathElemStart = namespace.lastIndexOf("/");
     var lastPathElem =  namespace.substr(lastPathElemStart + 1, 4);
+
+    // If last character is _, pull it off
+    if (lastPathElem[lastPathElem.length -1] === '_') {
+        lastPathElem = lastPathElem.substr(0,3);
+    }
     return lastPathElem.toLowerCase();
 };
 
 // Used when referencing schema elements; i.e, <laun:batchId>
-var schemaNamespacePrefix = createSchemaPrefix(config.everteam.schema_namespace);
+var schemaNamespacePrefix;
 // Used when referencing process elements, such as the name of the message event
-var processNamespacePrefix = createSchemaPrefix(config.everteam.process_namespace);
+var processNamespacePrefix;
 
 /**
  * A helper method to assemble an xml element string
@@ -35,6 +43,11 @@ var createXMLElement = function (namespace, elementName, elementValue, createEnd
         xml = "<" + namespace + ":" + elementName + ">" + elementValue + "</" + namespace + ":" + elementName + ">\n";
     }
     return xml;
+};
+
+var initializeNamespaces = function () {
+    schemaNamespacePrefix = createSchemaPrefix(baseConfig.everteam.schema_namespace);
+    processNamespacePrefix = createSchemaPrefix(config.process_namespace);
 };
 
 /**
@@ -97,13 +110,13 @@ var parseArray = function (arrayName, json) {
 var constructXmlMessage = function (xmlBody) {
     var soapEnvelopeHeader = "<soapenv:Envelope" +
         " xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"" +
-        " xmlns:" + processNamespacePrefix + "=\"" + config.everteam.process_namespace + "\"" +
-        " xmlns:" + schemaNamespacePrefix + "=\"" + config.everteam.schema_namespace + "\">" +
+        " xmlns:" + processNamespacePrefix + "=\"" + config.process_namespace + "\"" +
+        " xmlns:" + schemaNamespacePrefix + "=\"" + baseConfig.everteam.schema_namespace + "\">" +
         "<soapenv:Header/>\n" +
         "    <soapenv:Body>\n";
 
-    var requestStartTag = createXMLElement(processNamespacePrefix, config.everteam.process_request, null, false);
-    var requestEndTag = createXMLElement(processNamespacePrefix, config.everteam.process_request, null, true);
+    var requestStartTag = createXMLElement(processNamespacePrefix, config.process_request, null, false);
+    var requestEndTag = createXMLElement(processNamespacePrefix, config.process_request, null, true);
 
     var soapEnvelopeFooter = "" +
         "   </soapenv:Body>\n" +
@@ -124,7 +137,12 @@ module.exports =
          * @param jsonMessage
          * @returns {*}
          */
-        convertJSONMessageToXMl: function (jsonMessage) {
+        convertJSONMessageToXMl: function (jsonMessage, queue) {
+            // Use the correct config object, based on which queue the message is coming from
+            config = baseConfig.everteam[queue];
+
+            initializeNamespaces();
+
             var json = convertJsonStringToObject(jsonMessage);
             if (!json) return "";
 
