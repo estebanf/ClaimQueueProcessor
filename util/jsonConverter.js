@@ -110,9 +110,14 @@ var parseArray = function (arrayName, json) {
 var constructXmlMessage = function (xmlBody) {
     var soapEnvelopeHeader = "<soapenv:Envelope" +
         " xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"" +
-        " xmlns:" + processNamespacePrefix + "=\"" + config.process_namespace + "\"" +
-        " xmlns:" + schemaNamespacePrefix + "=\"" + baseConfig.everteam.schema_namespace + "\">" +
-        "<soapenv:Header/>\n" +
+        " xmlns:" + processNamespacePrefix + "=\"" + config.process_namespace + "\"";
+
+    if (baseConfig.everteam.schema_namespace !== config.process_namespace) {
+        soapEnvelopeHeader += " xmlns:" + schemaNamespacePrefix + "=\"" + baseConfig.everteam.schema_namespace + "\">";
+    } else {
+        soapEnvelopeHeader += ">";
+    }
+    soapEnvelopeHeader += "<soapenv:Header/>\n" +
         "    <soapenv:Body>\n";
 
     var requestStartTag = createXMLElement(processNamespacePrefix, config.process_request, null, false);

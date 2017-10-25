@@ -82,12 +82,25 @@ module.exports = {
 
                 var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], "request");
 
+                console.log("The xml generated from the ISO request is " + xml);
 
                 // POST XML to url:config.bpm.uri + 'ode/processes/LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM',
+                request({
+                    url:'http://192.168.241.203:8080/everteam/ode/processes/LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM',
+                    headers:{
+                        'Content-Type': 'text/xml; charset=utf-8'
+                    },
+                    method:'POST',
+                    body:xml
+                },function(err,res,data){
+                    if(err){
+                        console.log("Caught an error trying to send a response " + err + " " + JSON.stringify(err));
+                    } else {
+                        console.log("The response was " + res + " " + JSON.stringify(res));
+                        console.log("The data was " + data + " " + JSON.stringify(data));
+                    }
+                });
 
-
-
-                console.log("The xml generated from the ISO request is " + xml);
                 client.ack(message.headers['message-id']);
 
 
