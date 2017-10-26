@@ -6,11 +6,9 @@ module.exports = app;
 
 
 (function () {
-    var client = queueWatcher.setupQueueWatcher("batch");
 
-    queueWatcher.setupEventHandlers(client, "batch");
-/*    queueWatcher.setupEventHandlers(client, "request");
-    queueWatcher.setupEventHandlers(client, "score");*/
+    queueWatcher.setupQueueProcessors();
+
 })();
 
 

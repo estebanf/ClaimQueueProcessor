@@ -46,7 +46,7 @@ var createXMLElement = function (namespace, elementName, elementValue, createEnd
 };
 
 var initializeNamespaces = function () {
-    schemaNamespacePrefix = createSchemaPrefix(baseConfig.everteam.schema_namespace);
+    schemaNamespacePrefix = createSchemaPrefix(baseConfig.bpms_schema_namespace);
     processNamespacePrefix = createSchemaPrefix(config.process_namespace);
 };
 
@@ -112,8 +112,8 @@ var constructXmlMessage = function (xmlBody) {
         " xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"" +
         " xmlns:" + processNamespacePrefix + "=\"" + config.process_namespace + "\"";
 
-    if (baseConfig.everteam.schema_namespace !== config.process_namespace) {
-        soapEnvelopeHeader += " xmlns:" + schemaNamespacePrefix + "=\"" + baseConfig.everteam.schema_namespace + "\">";
+    if (baseConfig.bpms_schema_namespace !== config.process_namespace) {
+        soapEnvelopeHeader += " xmlns:" + schemaNamespacePrefix + "=\"" + baseConfig.bpms_schema_namespace + "\">";
     } else {
         soapEnvelopeHeader += ">";
     }
@@ -144,7 +144,7 @@ module.exports =
          */
         convertJSONMessageToXMl: function (jsonMessage, queue) {
             // Use the correct config object, based on which queue the message is coming from
-            config = baseConfig.everteam[queue];
+            config = baseConfig[queue];
 
             initializeNamespaces();
 

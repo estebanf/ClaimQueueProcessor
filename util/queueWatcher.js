@@ -5,52 +5,75 @@ var baseConfig = require('../config');
 var jsonConverter = require('./jsonConverter');
 var request = require('request');
 
+var client, config;
 
+var postToBPMS = function (message) {
 
-var config;
+    var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
+
+    console.info("The xml generated from the ISO request is " + xml);
+
+    console.info("Sending to " + config.endpoint);
+    request({
+        url:config.endpoint,
+        headers:{
+            'Content-Type': 'text/xml; charset=utf-8'
+        },
+        method:'POST',
+        body:xml
+    },function(err,res,data){
+        if(err){
+            console.error("Caught an error trying to send a response " + err + " " + JSON.stringify(err));
+        } else {
+            console.log("The response was " + res + " " + JSON.stringify(res));
+            console.log("The data was " + data + " " + JSON.stringify(data));
+        }
+    });
+};
+
+var postToQueue = function (message) {
+    var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
+
+    console.info("The xml being sent is " + xml);
+
+    client.send({
+        'destination': config.target_queue,
+        'body': xml,
+        'persistent': 'true'
+    });
+};
 
 var createClient = function (queueType) {
     var stomp_args = {
-        port: baseConfig.active_mq.port,
-        host: baseConfig.active_mq.host,
-        debug: false,
-        login: baseConfig.active_mq.user,
-        passcode: baseConfig.active_mq.password,
+        port: baseConfig.active_mq_port,
+        host: baseConfig.active_mq_host,
+        info: false,
+        login: baseConfig.active_mq_user,
+        passcode: baseConfig.active_mq_password,
     };
 
-    var client = new stomp.Stomp(stomp_args);
-
+    client = new stomp.Stomp(stomp_args);
     client.connect();
-
-    return client;
-
-    // setupEventHandlers(client, queueType);
 };
 
 var message_callback = function (body, headers) {
-    console.log('Message Callback Fired!');
-    console.log('Body: ' + body);
+    console.info('Message Callback Fired!');
+    console.info('Body: ' + body);
 };
 
 module.exports = {
-    setupQueueWatcher : function(queueType){
-        console.log("The queue type is " + queueType);
-        config = baseConfig.active_mq[queueType];
-        console.log("The config is " + JSON.stringify(config));
-        return createClient(queueType);
-    },
 
-    setupEventHandlers : function (client) {
+    setupQueueProcessors : function () {
 
-        // config = baseConfig.active_mq[queueType];
-
+        createClient();
 
         client.on('connected', function() {
 
+            // Subscribe to all source queues
             var sourceQueues = [
-                baseConfig.active_mq.batch.source_queue,
-                baseConfig.active_mq.request.source_queue,
-                baseConfig.active_mq.score.source_queue
+                baseConfig.batch.source_queue,
+                baseConfig.request.source_queue,
+                baseConfig.score.source_queue
             ];
             for (var queueIdx = 0; queueIdx < sourceQueues.length; queueIdx++) {
                 var headers = {
@@ -64,89 +87,26 @@ module.exports = {
         });
 
         client.on('message', function(message) {
-            console.log("Got message: " + message.headers['message-id']);
-            console.log(JSON.stringify(message.headers));
-            console.log(message.body);
-            var bpmsConfig;
-            if (message.headers.destination === baseConfig.active_mq.batch.source_queue) {
-                bpmsConfig = baseConfig.everteam.batch;
-                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], bpmsConfig.message_type);
+            console.info("Got message: " + message.headers['message-id']);
+            console.info(JSON.stringify(message.headers));
+            console.info(message.body);
 
-                console.log("The xml being sent is " + xml);
-
-                client.send({
-                    'destination': config.target_queue,
-                    'body': xml,
-                    'persistent': 'true'
-                });
-
+            // Handle message based on which queue it came from
+            if (message.headers.destination === baseConfig.batch.source_queue) {
+                config = baseConfig.batch;
+                postToQueue(message);
                 client.ack(message.headers['message-id']);
-            } else if (message.headers.destination === baseConfig.active_mq.request.source_queue) {
-                bpmsConfig = baseConfig.everteam.request;
-
-                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], bpmsConfig.message_type);
-
-                console.log("The xml generated from the ISO request is " + xml);
-
-                // POST XML to url:config.bpm.uri + 'ode/processes/LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM',
-                console.log("Sending to " + bpmsConfig.endpoint);
-                request({
-                    url:bpmsConfig.endpoint,
-                    headers:{
-                        'Content-Type': 'text/xml; charset=utf-8'
-                    },
-                    method:'POST',
-                    body:xml
-                },function(err,res,data){
-                    if(err){
-                        console.log("Caught an error trying to send a response " + err + " " + JSON.stringify(err));
-                    } else {
-                        console.log("The response was " + res + " " + JSON.stringify(res));
-                        console.log("The data was " + data + " " + JSON.stringify(data));
-                    }
-                });
-
+            } else if (message.headers.destination === baseConfig.request.source_queue) {
+                config = baseConfig.request;
+                postToBPMS(message);
                 client.ack(message.headers['message-id']);
-
-
-
-
-
-            } else if (message.headers.destination === baseConfig.active_mq.score.source_queue) {
-                console.log(JSON.stringify(message.body));
-                bpmsConfig = baseConfig.everteam.score;
-
-                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], bpmsConfig.message_type);
-
-                console.log("The xml generated from the ISO score is " + xml);
-
-
-                // POST XML to config.bpm.uri + 'ode/processes/LaunchPointProcess_Processes_Core_ProcessISOResponse_ISO_Response_Manager_DCM',
-                console.log("Sending score to " + bpmsConfig.endpoint);
-                request({
-                    url: bpmsConfig.endpoint,
-                    headers: {
-                        'Content-Type': 'text/xml; charset=utf-8'
-                    },
-                    method: 'POST',
-                    body: xml
-                }, function (error, resp, data) {
-                    if (error) {
-                        console.log("Got an error " + error + " " + JSON.stringify(error));
-                        console.error(error);
-                    } else {
-                        console.log("The resp is " + resp + " " + JSON.stringify(resp));
-                        console.log("The data is " + data + " " + JSON.stringify(data));
-                    }
-                });
-
-
+            } else if (message.headers.destination === baseConfig.score.source_queue) {
+                config = baseConfig.score;
+                postToBPMS(message);
                 client.ack(message.headers['message-id']);
             } else {
                 console.error("Unknown queue: " + message.headers.destination);
             }
-
-
         });
 
         client.on('error', function(error_frame) {
