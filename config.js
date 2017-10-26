@@ -28,13 +28,18 @@ config.everteam.batch = {};
 config.everteam.request = {};
 config.everteam.score = {};
 
+config.everteam.batch.message_type="batch";
 config.everteam.batch.process_namespace = "http://bpms.everteam.com/Processes/Core/CaseManagement/Case_Manager";
 config.everteam.batch.process_request="Read_case_batchRequest";
 
+config.everteam.request.message_type="request";
 config.everteam.request.process_namespace = "http://www.example.org/Launchpoint";
 config.everteam.request.process_request="DCMISORequestFile";
+config.everteam.request.endpoint="http://192.168.241.203:8080/everteam/ode/processes/LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM";
 
+config.everteam.score.message_type="score";
 config.everteam.score.process_namespace = "http://bpms.everteam.com/Processes/Core/ProcessISOResponse/ISO_Response_Manager";
 config.everteam.score.process_request="Receive_ScoringRequest";
+config.everteam.score.endpoint="http://192.168.241.203:8080/everteam/ode/processes/LaunchPointProcess_Processes_Core_ProcessISOResponse_ISO_Response_Manager_DCM";
 
 module.exports = config;

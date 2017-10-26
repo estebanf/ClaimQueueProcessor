@@ -36,6 +36,7 @@ module.exports = {
     setupQueueWatcher : function(queueType){
         console.log("The queue type is " + queueType);
         config = baseConfig.active_mq[queueType];
+        console.log("The config is " + JSON.stringify(config));
         return createClient(queueType);
     },
 
@@ -66,8 +67,10 @@ module.exports = {
             console.log("Got message: " + message.headers['message-id']);
             console.log(JSON.stringify(message.headers));
             console.log(message.body);
+            var bpmsConfig;
             if (message.headers.destination === baseConfig.active_mq.batch.source_queue) {
-                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], "batch");
+                bpmsConfig = baseConfig.everteam.batch;
+                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], bpmsConfig.message_type);
 
                 console.log("The xml being sent is " + xml);
 
@@ -79,14 +82,16 @@ module.exports = {
 
                 client.ack(message.headers['message-id']);
             } else if (message.headers.destination === baseConfig.active_mq.request.source_queue) {
+                bpmsConfig = baseConfig.everteam.request;
 
-                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], "request");
+                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], bpmsConfig.message_type);
 
                 console.log("The xml generated from the ISO request is " + xml);
 
                 // POST XML to url:config.bpm.uri + 'ode/processes/LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM',
+                console.log("Sending to " + bpmsConfig.endpoint);
                 request({
-                    url:'http://192.168.241.203:8080/everteam/ode/processes/LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM',
+                    url:bpmsConfig.endpoint,
                     headers:{
                         'Content-Type': 'text/xml; charset=utf-8'
                     },
@@ -109,15 +114,17 @@ module.exports = {
 
             } else if (message.headers.destination === baseConfig.active_mq.score.source_queue) {
                 console.log(JSON.stringify(message.body));
-                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], "score");
+                bpmsConfig = baseConfig.everteam.score;
+
+                var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], bpmsConfig.message_type);
 
                 console.log("The xml generated from the ISO score is " + xml);
 
 
                 // POST XML to config.bpm.uri + 'ode/processes/LaunchPointProcess_Processes_Core_ProcessISOResponse_ISO_Response_Manager_DCM',
-
+                console.log("Sending score to " + bpmsConfig.endpoint);
                 request({
-                    url: 'http://192.168.241.203:8080/everteam/ode/processes/LaunchPointProcess_Processes_Core_ProcessISOResponse_ISO_Response_Manager_DCM',
+                    url: bpmsConfig.endpoint,
                     headers: {
                         'Content-Type': 'text/xml; charset=utf-8'
                     },
