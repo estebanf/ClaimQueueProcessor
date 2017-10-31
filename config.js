@@ -1,4 +1,4 @@
-var baseURL = process.env.NODE_ENV === "development" ? "http://192.168.241.205:8080/" : "http://bpms.everteam.us/";
+var baseURL = process.env.BPMS_URI ||  "http://bpms.everteam.us/";
 
 var config = {};
 
