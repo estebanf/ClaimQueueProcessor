@@ -1,4 +1,4 @@
-var baseURL = process.env.NODE_ENV === "development" ? "http://192.168.241.205:8080/" : "http://bpms.everteam.us/";
+var baseURL = process.env.BPMS_URI ||  "http://bpms.everteam.us:8080/everteam/";
 
 var config = {};
 
@@ -6,7 +6,7 @@ config.batch = {};
 config.request = {};
 config.score = {};
 
-config.active_mq_host = process.env.ACTIVEMQ_HOST || 'localhost';
+config.active_mq_host = process.env.ACTIVEMQ_HOST || 'bpms.everteam.us';
 config.active_mq_port = process.env.ACTIVEMQ_PORT || 61613;
 config.active_mq_user = process.env.ACTIVEMQ_USER || 'admin';
 config.active_mq_password=  process.env.ACTIVEMQ_PASSWORD || 'admin';
