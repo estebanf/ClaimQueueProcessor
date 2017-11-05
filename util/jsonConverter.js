@@ -75,7 +75,9 @@ var parseObject = function (json) {
     var xml = "";
     for (var key in json) {
         if (Array.isArray(json[key])) {
+            xml += createXMLElement(schemaNamespacePrefix, key, null, false);
             xml += parseArray(key, json[key]);
+            xml += createXMLElement(schemaNamespacePrefix, key, null, true);
         } else {
             xml += createXMLElement(schemaNamespacePrefix, key, json[key]);
         }
@@ -91,12 +93,13 @@ var parseObject = function (json) {
  * @returns {string}
  */
 var parseArray = function (arrayName, json) {
+    var arrayElementName = arrayName.substring(0, arrayName.length -1);
     var xml = "";
     for (var i = 0; i < json.length; i++) {
         var object = json[i];
-        xml += createXMLElement(schemaNamespacePrefix, arrayName, null, false);
+        xml += createXMLElement(schemaNamespacePrefix, arrayElementName, null, false);
         xml += parseObject(object);
-        xml += createXMLElement(schemaNamespacePrefix, arrayName, null, true);
+        xml += createXMLElement(schemaNamespacePrefix, arrayElementName, null, true);
     }
     console.log("The translated array xml is " + xml);
     return xml;
