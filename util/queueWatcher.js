@@ -25,7 +25,18 @@ var postToBPMS = function (message) {
     },function(err,res,data){
         if(err){
             console.error("Caught an error trying to send a response " + err + " " + JSON.stringify(err));
-        } else {
+
+            if (config.message_type === "batch") {
+                var jsonMessage = JSON.parse(message.body[0]);
+
+                var queueResponse = {};
+                queueResponse.message = "Caught an error trying to post batch " + jsonMessage.BatchId;
+                queueResponse.error = err;
+
+                postToQueue(JSON.stringify(queueResponse));
+            }
+
+            } else {
             console.log("The response was " + res + " " + JSON.stringify(res));
             console.log("The data was " + data + " " + JSON.stringify(data));
             console.log("The message.body[0] is " + message.body[0]);
