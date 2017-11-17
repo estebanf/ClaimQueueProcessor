@@ -5,41 +5,58 @@ var baseConfig = require('../config');
 var jsonConverter = require('./jsonConverter');
 var request = require('request');
 var xml2json = require('xml2json');
+var log4js = require("log4js");
+log4js.configure({
+    appenders: {
+        everything: { type: 'dateFile', filename: 'all-the-logs.log', pattern: '.yyyy-MM-dd-hh', compress: true }
+    },
+    categories: {
+        default: { appenders: [ 'everything' ], level: 'info'}
+    }
+});
+
+var logger = log4js.getLogger();
 
 var client, config;
 
 var postToBPMS = function (message) {
 
-    var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
+    var result = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
+    var xml;
 
-    console.info("The xml being posted is " + xml);
+    if (typeof result === "object") {
+        // Caught an error transforming JSON into XML, so handle the error and exit
+        handleError(message.body[0], result, false);
+        return;
+    } else {
+        xml = result;
+    }
 
-    console.info("Sending to " + config.endpoint);
+    logger.info("The xml being posted is " + xml);
+
+    logger.info("Sending to " + config.endpoint);
     request({
-        url:config.endpoint,
-        headers:{
+        url: config.endpoint,
+        headers: {
             'Content-Type': 'text/xml; charset=utf-8'
         },
-        method:'POST',
-        body:xml
-    },function(err,res,data){
-        if(err){
-            console.error("Caught an error trying to send a response " + err + " " + JSON.stringify(err));
+        method: 'POST',
+        body: xml
+    }, function (err, res, data) {
+        if (err) {
+            logger.error("Caught an error trying to send a response " + err + " " + JSON.stringify(err));
 
-            if (config.message_type === "batch") {
-                var jsonMessage = JSON.parse(message.body[0]);
-
-                var queueResponse = {};
-                queueResponse.message = "Caught an error trying to post batch " + jsonMessage.BatchId;
-                queueResponse.error = err;
-
-                postToQueue(JSON.stringify(queueResponse));
+            var error = {
+                message: "Caught an error attempting to communicate with BPMS about queue message " + message.body[0],
+                error: err
             }
 
-            } else {
-            console.log("The response was " + res + " " + JSON.stringify(res));
-            console.log("The data was " + data + " " + JSON.stringify(data));
-            console.log("The message.body[0] is " + message.body[0]);
+            handleError(message.body[0], error, true);
+
+        } else {
+            logger.info("The response was " + res + " " + JSON.stringify(res));
+            logger.info("The data was " + data + " " + JSON.stringify(data));
+            logger.info("The message.body[0] is " + message.body[0]);
 
             if (config.message_type === "batch") {
                 var response = JSON.parse(xml2json.toJson(data));
@@ -52,20 +69,31 @@ var postToBPMS = function (message) {
 
                 postToQueue(JSON.stringify(queueResponse));
 
-                console.log("The queue response is " + JSON.stringify(queueResponse));
+                logger.info("The queue response is " + JSON.stringify(queueResponse));
 
             }
         }
     });
 };
 
-var postToQueue = function (message) {
+var handleError = function (queueMessage, error, reenqueue) {
+
+    // Post the error message to the target queue
+    postToQueue(JSON.stringify(error));
+
+    // Re-enqueue the message to be processed again
+    if (reenqueue) {
+        // postToQueue(queueMessage, config.source_queue);
+    }
+};
+
+var postToQueue = function (message, queue) {
     // var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
 
-    console.info("The xml being sent is " + message);
+    logger.info("The xml being sent is " + message);
 
     client.send({
-        'destination': config.target_queue,
+        'destination': queue ? queue : config.target_queue,
         'body': message,
         'persistent': 'true'
     });
@@ -85,17 +113,17 @@ var createClient = function (queueType) {
 };
 
 var message_callback = function (body, headers) {
-    console.info('Message Callback Fired!');
-    console.info('Body: ' + body);
+    logger.info('Message Callback Fired!');
+    logger.info('Body: ' + body);
 };
 
 module.exports = {
 
-    setupQueueProcessors : function () {
+    setupQueueProcessors: function () {
 
         createClient();
 
-        client.on('connected', function() {
+        client.on('connected', function () {
 
             // Subscribe to all source queues
             var sourceQueues = [
@@ -110,14 +138,14 @@ module.exports = {
                 };
                 client.subscribe(headers, message_callback);
 
-                console.log('Connected to ' + sourceQueues[queueIdx]);
+                logger.info('Connected to ' + sourceQueues[queueIdx]);
             }
         });
 
-        client.on('message', function(message) {
-            console.info("Got message: " + message.headers['message-id']);
-            console.info(JSON.stringify(message.headers));
-            console.info(message.body);
+        client.on('message', function (message) {
+            logger.info("Got message: " + message.headers['message-id']);
+            logger.info(JSON.stringify(message.headers));
+            logger.info(message.body);
 
             // Handle message based on which queue it came from
             if (message.headers.destination === baseConfig.batch.source_queue) {
@@ -134,12 +162,12 @@ module.exports = {
                 postToBPMS(message);
                 client.ack(message.headers['message-id']);
             } else {
-                console.error("Unknown queue: " + message.headers.destination);
+                logger.error("Unknown queue: " + message.headers.destination);
             }
         });
 
-        client.on('error', function(error_frame) {
-            console.log(error_frame.body);
+        client.on('error', function (error_frame) {
+            logger.info(error_frame.body);
             client.disconnect();
         });
     }

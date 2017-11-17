@@ -8,6 +8,7 @@
   "dependencies": {
     "debug": "~2.6.3",
     "express": "~4.15.2",
+    "log4js": "^2.3.12",
     "request": "^2.83.0",
     "serve-favicon": "~2.4.2",
     "stomp": "^0.1.1",

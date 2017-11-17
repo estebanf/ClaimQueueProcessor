@@ -1,3 +1,15 @@
+var log4js = require("log4js");
+log4js.configure({
+    appenders: {
+        everything: { type: 'dateFile', filename: 'all-the-logs.log', pattern: '.yyyy-MM-dd-hh', compress: true }
+    },
+    categories: {
+        default: { appenders: [ 'everything' ], level: 'info'}
+    }
+});
+
+var logger = log4js.getLogger();
+
 var baseConfig = require("../config.js");
 
 // Initialized by convertJSONMessageToXMl
@@ -60,8 +72,8 @@ var convertJsonStringToObject = function (jsonString) {
     try {
         jsonObject = JSON.parse(jsonString);
     } catch (e) {
-        console.error("Caught an error converting json to xml " + e);
-        console.error(jsonString);
+        logger.error("Caught an error converting json to xml " + e);
+        logger.error(jsonString);
     }
     return jsonObject;
 };
@@ -80,7 +92,7 @@ var parseObject = function (json) {
             xml += createXMLElement(schemaNamespacePrefix, key, json[key]);
         }
     }
-    console.log("The translated json is " + xml);
+    logger.info("The translated json is " + xml);
     return xml;
 };
 
@@ -98,7 +110,7 @@ var parseArray = function (arrayName, json) {
         xml += parseObject(object);
         xml += createXMLElement(schemaNamespacePrefix, arrayName, null, true);
     }
-    console.log("The translated array xml is " + xml);
+    logger.info("The translated array xml is " + xml);
     return xml;
 };
 
@@ -148,12 +160,21 @@ module.exports =
 
             initializeNamespaces();
 
-            var json = convertJsonStringToObject(jsonMessage);
-            if (!json) return "";
 
-            var xml = parseObject(json);
+            try {
+                var json = JSON.parse(jsonMessage);
+                var xml = parseObject(json);
+                return constructXmlMessage(xml);
 
-            return constructXmlMessage(xml);
+            } catch (err) {
+                logger.info("The error is " + err);
+                logger.info("The type of the error is " + typeof err);
+                return {
+                    message: "Caught an error parsing JSON",
+                    error: err
+                };
+            }
+
         }
 
     };
