@@ -6,14 +6,6 @@ var jsonConverter = require('./jsonConverter');
 var request = require('request');
 var xml2json = require('xml2json');
 var log4js = require("log4js");
-log4js.configure({
-    appenders: {
-        everything: { type: 'dateFile', filename: 'all-the-logs.log', pattern: '.yyyy-MM-dd-hh', compress: true }
-    },
-    categories: {
-        default: { appenders: [ 'everything' ], level: 'info'}
-    }
-});
 
 var logger = log4js.getLogger();
 
