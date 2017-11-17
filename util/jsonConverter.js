@@ -54,22 +54,6 @@ var initializeNamespaces = function () {
 };
 
 /**
- * Tries to parse the given string as JSON. If parsing fails, prints to the error log and returns an undefined object
- * @param jsonString
- * @returns {*}
- */
-var convertJsonStringToObject = function (jsonString) {
-    var jsonObject;
-    try {
-        jsonObject = JSON.parse(jsonString);
-    } catch (e) {
-        logger.error("Caught an error converting json to xml " + e);
-        logger.error(jsonString);
-    }
-    return jsonObject;
-};
-
-/**
  * Takes a json object and outputs the equivalent XML. Does NOT handle nested objects
  * @param json
  * @returns {string}
@@ -158,11 +142,9 @@ module.exports =
                 return constructXmlMessage(xml);
 
             } catch (err) {
-                logger.info("The error is " + err);
-                logger.info("The type of the error is " + typeof err);
                 return {
-                    message: "Caught an error parsing JSON",
-                    error: err
+                    message: "Caught an error parsing JSON " + jsonMessage,
+                    error: err.toString()
                 };
             }
 

@@ -47,8 +47,6 @@ var postToBPMS = function (message) {
 
         } else {
             logger.info("The response was " + res + " " + JSON.stringify(res));
-            logger.info("The data was " + data + " " + JSON.stringify(data));
-            logger.info("The message.body[0] is " + message.body[0]);
 
             if (config.message_type === "batch") {
                 var response = JSON.parse(xml2json.toJson(data));
@@ -75,7 +73,7 @@ var handleError = function (queueMessage, error, reenqueue) {
 
     // Re-enqueue the message to be processed again
     if (reenqueue) {
-        // postToQueue(queueMessage, config.source_queue);
+        postToQueue(queueMessage, config.source_queue);
     }
 };
 
