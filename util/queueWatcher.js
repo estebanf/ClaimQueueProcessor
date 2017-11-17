@@ -11,7 +11,7 @@ var postToBPMS = function (message) {
 
     var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
 
-    console.info("The xml generated from the ISO request is " + xml);
+    console.info("The xml being posted is " + xml);
 
     console.info("Sending to " + config.endpoint);
     request({
@@ -31,7 +31,7 @@ var postToBPMS = function (message) {
     });
 };
 
-var postToQueue = function (message) {
+/*var postToQueue = function (message) {
     var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
 
     console.info("The xml being sent is " + xml);
@@ -41,7 +41,7 @@ var postToQueue = function (message) {
         'body': xml,
         'persistent': 'true'
     });
-};
+};*/
 
 var createClient = function (queueType) {
     var stomp_args = {
@@ -94,7 +94,8 @@ module.exports = {
             // Handle message based on which queue it came from
             if (message.headers.destination === baseConfig.batch.source_queue) {
                 config = baseConfig.batch;
-                postToQueue(message);
+                // postToQueue(message);
+                postToBPMS(message);
                 client.ack(message.headers['message-id']);
             } else if (message.headers.destination === baseConfig.request.source_queue) {
                 config = baseConfig.request;

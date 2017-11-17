@@ -23,6 +23,7 @@ config.bpms_schema_namespace = "http://www.example.org/Launchpoint";
 config.batch.message_type="batch";
 config.batch.process_namespace = "http://bpms.everteam.com/Processes/Core/CaseManagement/Case_Manager";
 config.batch.process_request="Read_case_batchRequest";
+config.batch.endpoint=baseURL + "ode/processes/LaunchPointProcess_Processes_Core_CaseManagement_Case_Manager_Queue_Service";
 
 config.request.message_type="request";
 config.request.process_namespace = "http://www.example.org/Launchpoint";
