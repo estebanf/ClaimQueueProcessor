@@ -4,6 +4,7 @@ var stomp = require('stomp');
 var baseConfig = require('../config');
 var jsonConverter = require('./jsonConverter');
 var request = require('request');
+var xml2json = require('xml2json');
 
 var client, config;
 
@@ -27,21 +28,37 @@ var postToBPMS = function (message) {
         } else {
             console.log("The response was " + res + " " + JSON.stringify(res));
             console.log("The data was " + data + " " + JSON.stringify(data));
+            console.log("The message.body[0] is " + message.body[0]);
+
+            if (config.message_type === "batch") {
+                var response = JSON.parse(xml2json.toJson(data));
+                var jsonMessage = JSON.parse(message.body[0]);
+
+                var queueResponse = {};
+                queueResponse.batchId = jsonMessage.BatchId;
+                queueResponse.pid = response["soapenv:Envelope"]["soapenv:Body"][config.process_response]["tns:pid"]["$t"];
+                queueResponse.timestamp = response["soapenv:Envelope"]["soapenv:Body"][config.process_response]["tns:timestamp"]["$t"];
+
+                postToQueue(JSON.stringify(queueResponse));
+
+                console.log("The queue response is " + JSON.stringify(queueResponse));
+
+            }
         }
     });
 };
 
-/*var postToQueue = function (message) {
-    var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
+var postToQueue = function (message) {
+    // var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
 
-    console.info("The xml being sent is " + xml);
+    console.info("The xml being sent is " + message);
 
     client.send({
         'destination': config.target_queue,
-        'body': xml,
+        'body': message,
         'persistent': 'true'
     });
-};*/
+};
 
 var createClient = function (queueType) {
     var stomp_args = {
