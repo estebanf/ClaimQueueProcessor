@@ -4,6 +4,7 @@ var config = {};
 
 config.batch = {};
 config.request = {};
+config.letter = {};
 config.score = {};
 
 config.active_mq_host = process.env.ACTIVEMQ_HOST || 'bpms.everteam.us';
@@ -16,6 +17,9 @@ config.batch.target_queue = process.env.ACTIVEMQ_BATCH_TARGET_QUEUE || '/queue/B
 
 config.request.source_queue = process.env.ACTIVEMQ_REQUEST_SOURCE_QUEUE || '/queue/iso_request';
 config.request.target_queue = process.env.ACTIVEMQ_REQUEST_TARGET_QUEUE || '/queue/iso_request_response';
+
+config.letter.source_queue = process.env.ACTIVEMQ_LETTER_SOURCE_QUEUE || '/queue/iq_letter';
+config.letter.target_queue = process.env.ACTIVEMQ_LETTER_TARGET_QUEUE || '/queue/iq_letter_response';
 
 config.score.source_queue = process.env.ACTIVEMQ_SCORE_SOURCE_QUEUE || '/queue/iso_score';
 config.score.target_queue = process.env.ACTIVEMQ_SCORE_TARGET_QUEUE || '/queue/iso_score_response';
@@ -33,6 +37,12 @@ config.request.process_namespace = "http://www.example.org/Launchpoint";
 config.request.process_request="DCMISORequestFile";
 config.request.process_response="DCMISORequestFile";
 config.request.endpoint=baseURL + "ode/processes/LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM";
+
+config.letter.message_type="letter";
+config.letter.process_namespace = "http://bpms.everteam.com/Processes/Core/ProcessIQCase/Queue_Monitor";
+config.letter.process_request="Receive_resultsRequest";
+config.letter.process_response="Receive_resultsRequest";
+config.letter.endpoint=baseURL + "ode/processes/LaunchPointProcess_Processes_Core_ProcessIQCase_Queue_Monitor_DCM";
 
 config.score.message_type="score";
 config.score.process_namespace = "http://bpms.everteam.com/Processes/Core/ProcessISOResponse/ISO_Response_Manager";

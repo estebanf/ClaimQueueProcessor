@@ -118,6 +118,7 @@ module.exports = {
             // Subscribe to all source queues
             var sourceQueues = [
                 baseConfig.batch.source_queue,
+                baseConfig.letter.source_queue,
                 baseConfig.request.source_queue,
                 baseConfig.score.source_queue
             ];
@@ -145,6 +146,11 @@ module.exports = {
                 client.ack(message.headers['message-id']);
             } else if (message.headers.destination === baseConfig.request.source_queue) {
                 config = baseConfig.request;
+                postToBPMS(message);
+                client.ack(message.headers['message-id']);
+            } else if (message.headers.destination === baseConfig.letter.source_queue) {
+                logger.info("Got here with message " + JSON.stringify(message));
+                config = baseConfig.letter;
                 postToBPMS(message);
                 client.ack(message.headers['message-id']);
             } else if (message.headers.destination === baseConfig.score.source_queue) {
