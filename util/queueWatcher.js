@@ -47,23 +47,68 @@ var postToBPMS = function (message) {
 
         } else {
             logger.info("The response was " + res + " " + JSON.stringify(res));
+            logger.info("The data is " + data + " " + JSON.stringify(data));
 
-            if (config.message_type === "batch") {
-                var response = JSON.parse(xml2json.toJson(data));
-                var jsonMessage = JSON.parse(message.body[0]);
+            var queueResponse = {};
 
-                var queueResponse = {};
-                queueResponse.batchId = jsonMessage.BatchId;
-                queueResponse.pid = response["soapenv:Envelope"]["soapenv:Body"][config.process_response]["tns:pid"]["$t"];
-                queueResponse.timestamp = response["soapenv:Envelope"]["soapenv:Body"][config.process_response]["tns:timestamp"]["$t"];
-
-                postToQueue(JSON.stringify(queueResponse));
-
-                logger.info("The queue response is " + JSON.stringify(queueResponse));
-
+            // Pull response params out of the message that was posted to the source queue
+            var jsonMessage = JSON.parse(message.body[0]);
+            var responseParams = config.response_params.split(",");
+            for (var i = 0; i < responseParams.length; i++) {
+                var responseParam = responseParams[i];
+                queueResponse[responseParam] = jsonMessage[responseParam];
             }
+
+            // Pull any other values out of the response returned from the process
+            var response = JSON.parse(xml2json.toJson(data));
+            findResponseValues("", response, queueResponse);
+
+            postToQueue(JSON.stringify(queueResponse));
+
+            logger.info("The queue response is " + JSON.stringify(queueResponse));
+
+
         }
     });
+};
+
+var findResponseValues = function (parent, ob, retval) {
+    // Iterate through the keys in the current object, looking for $t, which represents a value, for JSON in the form of
+    /*
+        {
+          "soapenv:Envelope": {
+            "xmlns:soapenv": "http://schemas.xmlsoap.org/soap/envelope/",
+            "soapenv:Body": {
+              "Receive_resultsResponse": {
+                "xmlns": "http://bpms.everteam.com/Processes/Core/ProcessIQCase/Queue_Monitor",
+                "Launchpoint:pid": {
+                  "xmlns:Launchpoint": "http://www.example.org/Launchpoint",
+                  "$t": "12952"
+                },
+                "Launchpoint:timestamp": {
+                  "xmlns:Launchpoint": "http://www.example.org/Launchpoint",
+                  "$t": "2017-12-07T14:00:23.898-07:00"
+                }
+              }
+            }
+          }
+        }
+     */
+    for (var keyIdx = 0; keyIdx < Object.keys(ob).length; keyIdx++) {
+        var key = Object.keys(ob)[keyIdx];
+        if (key === "$t") {
+            var keyNameSansNamespace = parent.substr(parent.indexOf(":")+1);
+            retval[keyNameSansNamespace] = ob[key];
+        }
+    }
+
+    // Iterate again, to find values that are objects (to recurse on)
+    for (var keyIdx = 0; keyIdx < Object.keys(ob).length; keyIdx++) {
+        var key = Object.keys(ob)[keyIdx];
+        if (typeof ob[key] === "object") {
+            findResponseValues(key, ob[key], retval);
+        }
+    }
 };
 
 var handleError = function (queueMessage, error, reenqueue) {
@@ -78,8 +123,6 @@ var handleError = function (queueMessage, error, reenqueue) {
 };
 
 var postToQueue = function (message, queue) {
-    // var xml = jsonConverter.convertJSONMessageToXMl(message.body[0], config.message_type);
-
     logger.info("The xml being sent is " + message);
 
     client.send({
