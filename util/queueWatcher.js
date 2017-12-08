@@ -18,7 +18,7 @@ var postToBPMS = function (message) {
 
     if (typeof result === "object") {
         // Caught an error transforming JSON into XML, so handle the error and exit
-        handleError(message.body[0], result, false);
+        postToQueue(JSON.stringify(result));
         return;
     } else {
         xml = result;
@@ -35,29 +35,30 @@ var postToBPMS = function (message) {
         method: 'POST',
         body: xml
     }, function (err, res, data) {
-        if (err) {
-            logger.error("Caught an error trying to send a response " + err + " " + JSON.stringify(err));
+        
+        var queueResponse = {};
 
-            var error = {
-                message: "Caught an error attempting to communicate with BPMS about queue message " + message.body[0],
-                error: err
+        // Pull response params out of the message that was posted to the source queue
+        var jsonMessage = JSON.parse(message.body[0]);
+        var responseParams = config.response_params.split(",");
+        for (var i = 0; i < responseParams.length; i++) {
+            var responseParam = responseParams[i];
+            queueResponse[responseParam] = jsonMessage[responseParam];
+        }
+
+        if (err || (res && res.statusCode !== 200)) {
+            if (err) {
+                queueResponse.error = err;
+            } else {
+                queueResponse.error = res;
             }
 
-            handleError(message.body[0], error, true);
+            postToQueue(JSON.stringify(queueResponse));
 
         } else {
             logger.info("The response was " + res + " " + JSON.stringify(res));
             logger.info("The data is " + data + " " + JSON.stringify(data));
 
-            var queueResponse = {};
-
-            // Pull response params out of the message that was posted to the source queue
-            var jsonMessage = JSON.parse(message.body[0]);
-            var responseParams = config.response_params.split(",");
-            for (var i = 0; i < responseParams.length; i++) {
-                var responseParam = responseParams[i];
-                queueResponse[responseParam] = jsonMessage[responseParam];
-            }
 
             // Pull any other values out of the response returned from the process
             var response = JSON.parse(xml2json.toJson(data));
@@ -97,7 +98,7 @@ var findResponseValues = function (parent, ob, retval) {
     for (var keyIdx = 0; keyIdx < Object.keys(ob).length; keyIdx++) {
         var key = Object.keys(ob)[keyIdx];
         if (key === "$t") {
-            var keyNameSansNamespace = parent.substr(parent.indexOf(":")+1);
+            var keyNameSansNamespace = parent.substr(parent.indexOf(":") + 1);
             retval[keyNameSansNamespace] = ob[key];
         }
     }
@@ -108,17 +109,6 @@ var findResponseValues = function (parent, ob, retval) {
         if (typeof ob[key] === "object") {
             findResponseValues(key, ob[key], retval);
         }
-    }
-};
-
-var handleError = function (queueMessage, error, reenqueue) {
-
-    // Post the error message to the target queue
-    postToQueue(JSON.stringify(error));
-
-    // Re-enqueue the message to be processed again
-    if (reenqueue) {
-        postToQueue(queueMessage, config.source_queue);
     }
 };
 
