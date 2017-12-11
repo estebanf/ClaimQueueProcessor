@@ -38,15 +38,8 @@ var postToBPMS = function (message) {
         
         var queueResponse = {};
 
-        // Pull response params out of the message that was posted to the source queue
-        var jsonMessage = JSON.parse(message.body[0]);
-        var responseParams = config.response_params.split(",");
-        for (var i = 0; i < responseParams.length; i++) {
-            var responseParam = responseParams[i];
-            queueResponse[responseParam] = jsonMessage[responseParam];
-        }
-
         if (err || (res && res.statusCode !== 200)) {
+            queueResponse = findMessageValues(config.error_params, message);
             if (err) {
                 queueResponse.error = err;
             } else {
@@ -59,6 +52,7 @@ var postToBPMS = function (message) {
             logger.info("The response was " + res + " " + JSON.stringify(res));
             logger.info("The data is " + data + " " + JSON.stringify(data));
 
+            queueResponse = findMessageValues(config.response_params, message);
 
             // Pull any other values out of the response returned from the process
             var response = JSON.parse(xml2json.toJson(data));
@@ -71,6 +65,18 @@ var postToBPMS = function (message) {
 
         }
     });
+};
+
+var findMessageValues = function (keyStr, message) {
+    // Pull response or error params out of the message that was posted to the source queue
+    var retval = {};
+    var jsonMessage = JSON.parse(message.body[0]);
+    var keys = keyStr.split(",");
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        retval[key] = jsonMessage[key];
+    }
+    return retval;
 };
 
 var findResponseValues = function (parent, ob, retval) {

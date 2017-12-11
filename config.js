@@ -35,6 +35,7 @@ config.batch.process_namespace = "http://bpms.everteam.com/Processes/Core/CaseMa
 config.batch.process_request="Read_case_batchRequest";
 config.batch.process_response="Read_case_batchResponse";
 config.batch.response_params="EnvironmentId,BatchId,ClientId";
+config.batch.error_params="EnvironmentId,BatchId,ClientId";
 config.batch.endpoint=baseURL + "LaunchPointProcess_Processes_Core_CaseManagement_Case_Manager_Queue_Service";
 
 
@@ -42,14 +43,16 @@ config.request.message_type="request";
 config.request.process_namespace = "http://www.example.org/Launchpoint";
 config.request.process_request="DCMISORequestFile";
 config.request.process_response="DCMISORequestFile";
-config.request.response_params="CaseId";
+config.request.response_params="EnvironmentId,BatchId,ClientId,CaseId";
+config.request.error_params="CaseId";
 config.request.endpoint=baseURL + "LaunchPointProcess_Processes_Core_ProcessISOCase_Process_ISO_Case_DCM";
 
 config.letter.message_type="letter";
 config.letter.process_namespace = "http://bpms.everteam.com/Processes/Core/ProcessIQCase/Queue_Monitor";
 config.letter.process_request="Receive_resultsRequest";
 config.letter.process_response="Receive_resultsResponse";
-config.letter.response_params="CaseId"
+config.letter.response_params="EnvironmentId,BatchId,ClientId,CaseId";
+config.letter.error_params="CaseId";
 config.letter.endpoint=baseURL + "LaunchPointProcess_Processes_Core_ProcessIQCase_Queue_Monitor_DCM";
 
 config.iqbatch.message_type="iqbatch";
@@ -57,13 +60,15 @@ config.iqbatch.process_namespace = "http://bpms.everteam.com/Processes/Core/Proc
 config.iqbatch.process_request="Receive_IQ_Batch_ResultsRequest";
 config.iqbatch.process_response="Receive_IQ_Batch_ResultsResponse";
 config.iqbatch.response_params="IQBatchId";
+config.iqbatch.error_params="IQBatchId";
 config.iqbatch.endpoint=baseURL + "LaunchPointProcess_Processes_Core_ProcessIQCase_Queue_Monitor_DCM";
 
 config.score.message_type="score";
 config.score.process_namespace = "http://bpms.everteam.com/Processes/Core/ProcessISOResponse/ISO_Response_Manager";
 config.score.process_request="Receive_ScoringRequest";
 config.score.process_response="Receive_ScoringResponse";
-config.score.response_params="CaseId";
+config.score.response_params="EnvironmentId,BatchId,ClientId,CaseId";
+config.score.error_params="CaseId";
 config.score.endpoint=baseURL + "LaunchPointProcess_Processes_Core_ProcessISOResponse_ISO_Response_Manager_DCM";
 
 module.exports = config;
